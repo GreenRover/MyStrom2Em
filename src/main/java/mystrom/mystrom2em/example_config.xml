@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<configuration>
+	<em>
+		<baseUrl>https://energymanager.edl.ch/</baseUrl>
+		<apiKey>DSG34zeDThetgdgfvdf</apiKey>
+	</em>
+	<mystrom>
+		<switch>
+			<ip>192.168.50.121</ip>
+			<aksTemp>HHEN.KELLER.BOILER.TEMP.RAUM</aksTemp>
+			<aksVerbrauch>HHEN.KELLER.BOILER.VERBRAUCH</aksVerbrauch>
+		</switch>
+		<switch>
+			<ip>192.168.50.122</ip>
+			<aksTemp>HHEN.ALL.LICHT.TEMP.RAUM</aksTemp>
+			<aksVerbrauch>HHEN.ALL.LICHT.VERBRAUCH</aksVerbrauch>
+		</switch>
+	</mystrom>
+</configuration>
