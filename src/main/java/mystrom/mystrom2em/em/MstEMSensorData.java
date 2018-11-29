@@ -27,33 +27,33 @@ public class MstEMSensorData {
 		final URL url = new URL(baseUrl + "/energy-manager-sensor-measured/push-raw-data/api_key/" + apiKey);
 		callHttp(url, payload);
 	}
-	
+
 	private String toJson(final Collection<SensorData> data, final JUNCTION junction) {
 		final MstEmSensorDataRequest to = new MstEmSensorDataRequest();
 		to.setJunction(junction);
-		
+
 		data.stream() //
-			.collect(Collectors.groupingBy(SensorData::getAks)) //
-			.forEach((k, v) -> {
-				for (final SensorData sensor : v) {
-					to.addSensorsData(k, sensor.getData());
-				}
-			});
-		
+				.collect(Collectors.groupingBy(SensorData::getAks)) //
+				.forEach((k, v) -> {
+					for (final SensorData sensor : v) {
+						to.addSensorsData(k, sensor.getData());
+					}
+				});
+
 		return new Gson().toJson(to);
 	}
-	
+
 	private String callHttp(final URL url, final String postData) throws IOException {
 		final String type = "application/x-www-form-urlencoded";
 		final StringBuilder result = new StringBuilder();
 		final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("POST");
 		conn.setDoOutput(true);
-		conn.setRequestProperty( "Content-Type", type );
-		conn.setRequestProperty( "Content-Length", String.valueOf(postData.length()));
+		conn.setRequestProperty("Content-Type", type);
+		conn.setRequestProperty("Content-Length", String.valueOf(postData.length()));
 		final OutputStream os = conn.getOutputStream();
 		os.write(postData.getBytes());
-		
+
 		final BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 		String line;
 		while ((line = rd.readLine()) != null) {
@@ -63,6 +63,4 @@ public class MstEMSensorData {
 		return result.toString();
 	}
 
-
-	
 }

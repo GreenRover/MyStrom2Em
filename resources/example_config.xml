@@ -8,13 +8,15 @@
 	<mystrom>
 		<switch>
 			<ip>192.168.50.121</ip>
+			<pullIntervall>30</pullIntervall>
 			<aksTemp>HHEN.KELLER.BOILER.TEMP.RAUM</aksTemp>
-			<aksVerbrauch>HHEN.KELLER.BOILER.VERBRAUCH</aksVerbrauch>
+			<aksEnergy>HHEN.KELLER.BOILER.VERBRAUCH</aksEnergy>
 		</switch>
 		<switch>
 			<ip>192.168.50.122</ip>
+			<pullIntervall>30</pullIntervall>
 			<aksTemp>HHEN.ALL.LICHT.TEMP.RAUM</aksTemp>
-			<aksVerbrauch>HHEN.ALL.LICHT.VERBRAUCH</aksVerbrauch>
+			<aksEnergy>HHEN.ALL.LICHT.VERBRAUCH</aksEnergy>
 		</switch>
 	</mystrom>
 </configuration>

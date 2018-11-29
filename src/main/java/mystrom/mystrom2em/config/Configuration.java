@@ -16,8 +16,13 @@ public class Configuration {
 
 	public Configuration(final String xmlFile) throws ConfigurationException {
 		final Parameters params = new Parameters();
-		final FileBasedConfigurationBuilder<XMLConfiguration> builder = new FileBasedConfigurationBuilder<XMLConfiguration>(
-				XMLConfiguration.class).configure(params.xml().setFileName(xmlFile).setValidating(true));
+		final FileBasedConfigurationBuilder<XMLConfiguration> builder = new FileBasedConfigurationBuilder<>(
+				XMLConfiguration.class).configure( //
+						params.xml() //
+								.setFileName(xmlFile) //
+								.setValidating(true) //
+								.setSchemaValidation(true) //
+		);
 
 		config = builder.getConfiguration();
 	}
@@ -34,8 +39,11 @@ public class Configuration {
 		final List<ConfigMyStromSwitch> configs = new ArrayList<>();
 		final List<HierarchicalConfiguration<ImmutableNode>> switches = config.configurationsAt("mystrom.switch");
 		for (final HierarchicalConfiguration<ImmutableNode> sub : switches) {
-			configs.add(new ConfigMyStromSwitch(sub.getString("name"), sub.getString("aksTemp"),
-					sub.getString("aksVerbrauch")));
+			configs.add(new ConfigMyStromSwitch( //
+					sub.getString("name"), //
+					sub.getInteger("pullIntervall", 30), //
+					sub.getString("aksTemp"), //
+					sub.getString("aksEnergy")));
 		}
 
 		return configs;

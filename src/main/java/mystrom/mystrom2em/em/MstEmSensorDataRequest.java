@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
 
-class MstEmSensorDataRequest {
+public class MstEmSensorDataRequest {
 	
 	public enum JUNCTION {
 		APPEND, MERGE
@@ -16,7 +16,7 @@ class MstEmSensorDataRequest {
 	private final String timezone = "UTC";
 	private final String date_format = "d.m.Y H:i";
 	private String junction = "append";
-	private final Map<String, Map<String, Float>> sensors = new HashMap<>();
+	private final Map<String, Map<String, Double>> sensors = new HashMap<>();
 
 	private final static SimpleDateFormat DATE_FORMAT_LOCAL = new SimpleDateFormat("dd.MM.YYYY HH:mm");
 	static {
@@ -31,11 +31,11 @@ class MstEmSensorDataRequest {
 		this.junction = (junction == JUNCTION.APPEND ? "append" : "merge");
 	}
 
-	public Map<String, Map<String, Float>> getSensors() {
+	public Map<String, Map<String, Double>> getSensors() {
 		return sensors;
 	}
 
-	public void addSensorsData(final String aks, final Map<Date, Float> sensors) {
+	public void addSensorsData(final String aks, final Map<Date, Double> sensors) {
 		this.sensors.putIfAbsent(aks, new HashMap<>());
 		sensors.forEach((k, v) -> {
 			this.sensors.get(aks) //
