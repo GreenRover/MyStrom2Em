@@ -1,3 +1,5 @@
 target
 .settings
 config.xml
+data.csv
+mystrom.log

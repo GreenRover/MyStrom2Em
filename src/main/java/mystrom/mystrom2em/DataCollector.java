@@ -24,7 +24,7 @@ import java.util.function.ToDoubleFunction;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,15 +37,15 @@ import mystrom.mystrom2em.mystrom.MyStrom;
 import mystrom.mystrom2em.mystrom.MyStromReport;
 
 public class DataCollector implements Runnable {
-	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(5);
-	private final ThreadPoolExecutor excecuter = new ThreadPoolExecutor(300, 300, 0L, TimeUnit.MILLISECONDS,
+	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
+	private final ThreadPoolExecutor excecuter = new ThreadPoolExecutor(40, 40, 0L, TimeUnit.MILLISECONDS,
 			new LinkedBlockingQueue<Runnable>());
 	private final MyStrom ms;
 	private final MstEMSensorData em;
 	private final Configuration config;
-	
+
 	private final Map<ConfigMyStromSwitch, List<MyStromReport>> dataPoints = new HashMap<>();
-	
+
 	private final static Logger LOG = LoggerFactory.getLogger(DataCollector.class);
 	private final static Logger DATA_POINTS_LOG = LoggerFactory.getLogger("DATA_POINTS");
 	private final static SimpleDateFormat DATE_FORMAT_SQL = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
@@ -61,7 +61,7 @@ public class DataCollector implements Runnable {
 		initSensorScheduler();
 		initEmPushScheduler();
 	}
-	
+
 	private void initSensorScheduler() {
 		for (final ConfigMyStromSwitch sensorConfig : config.getSensorConfigs()) {
 			dataPoints.putIfAbsent(sensorConfig, Collections.synchronizedList(new ArrayList<>()));
@@ -77,35 +77,38 @@ public class DataCollector implements Runnable {
 			dataPoints.get(sensorConfig).add(report);
 			logCsv(sensorConfig.geIp(), report);
 		} catch (final IOException e) {
-			LOG.error("Unable to load data from %s, cause of: %s", sensorConfig.geIp(), e.getMessage());
+			LOG.error("Unable to load data from {}, cause of: {}", sensorConfig.geIp(), e.getMessage());
 		}
 	}
-	
+
 	private void logCsv(final String ip, final MyStromReport report) {
 		final Double power = report.getPower();
 		if (power != null) {
-			DATA_POINTS_LOG.info("%s;$s;power;%.4f", DATE_FORMAT_SQL.format(report.getDate()), ip, power);
+			DATA_POINTS_LOG
+					.info(String.format("%s;%s;power;%.4f", DATE_FORMAT_SQL.format(report.getDate()), ip, power));
 		}
-		
+
 		final Double temp = report.getTemperature();
 		if (temp != null) {
-			DATA_POINTS_LOG.info("%s;temp;%.4f", DATE_FORMAT_SQL.format(report.getDate()), report.getDate(), temp);
+			DATA_POINTS_LOG.info(String.format("%s;%s;temp;%.4f", DATE_FORMAT_SQL.format(report.getDate()), ip, temp));
 		}
 	}
 
 	private void initEmPushScheduler() {
 		final LocalDateTime now = LocalDateTime.now();
 		final LocalDateTime nextQuarter = now.truncatedTo(ChronoUnit.HOURS)
-		                                .plusMinutes(15 * ((now.getMinute() / 15) + 1));
-		final long delay = (nextQuarter.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() - System.currentTimeMillis()) / 1000;
+				.plusMinutes(15 * ((now.getMinute() / 15) + 1));
+		final long delay = 20; // (nextQuarter.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() -
+								// System.currentTimeMillis()) / 1000;
 		scheduler.scheduleAtFixedRate(() -> {
 			excecuter.execute(() -> emPushAndTruncateDataPoints());
-		}, delay, 15 * 60, TimeUnit.SECONDS);
+		}, delay, 15, TimeUnit.SECONDS);
 	}
-	
+
 	private void emPushAndTruncateDataPoints() {
-		final Date upperTimeRange = toLastQuaterHour(new Date());
-		
+		System.out.println("emPushAndTruncateDataPoints");
+		final Date upperTimeRange = new Date(); //toLastQuaterHour(new Date());
+
 		try {
 			final Collection<SensorData> sensorData = getSensorData(upperTimeRange);
 			if (sensorData.isEmpty()) {
@@ -113,59 +116,67 @@ public class DataCollector implements Runnable {
 			}
 			em.sendData(sensorData, MstEmSensorDataRequest.JUNCTION.APPEND);
 			truncateDataPointsUpTo(upperTimeRange);
-			LOG.info("Send %d sensors to EM", sensorData.size());
+			LOG.info("Send {} sensors to EM", sensorData.size());
 		} catch (final IOException e) {
-			LOG.error("Unable to send data to EM, cause of: %s", e.getMessage());
+			LOG.error("Unable to send data to EM, cause of: {}", e.getMessage());
 		}
 	}
-	
+
 	private Collection<SensorData> getSensorData(final Date upperTimeRange) {
 		return dataPoints.entrySet().stream() //
 				.flatMap(e -> {
 					final List<MyStromReport> filteredReports = e.getValue().stream() //
 							.filter(report -> report.isBefore(upperTimeRange)) //
 							.collect(Collectors.toList());
-					
-					final SensorData energy = processReportsToSensorData(e.getKey().getAksEnergy(), filteredReports, r -> r.getPower() / 4); // W / 4 == 15min Wh
-					final SensorData temp = processReportsToSensorData(e.getKey().getAksTemp(), filteredReports, MyStromReport::getTemperature);
-					
+
+					final SensorData energy = processReportsToSensorData(e.getKey().getAksEnergy(), filteredReports,
+							r -> r.getPower() / 4); // W / 4 == 15min Wh
+					final SensorData temp = processReportsToSensorData(e.getKey().getAksTemp(), filteredReports,
+							MyStromReport::getTemperature);
+
 					return Stream.of(energy, temp);
 				}) //
 				.filter(Objects::nonNull) //
 				.collect(Collectors.toList());
 	}
 
-	private SensorData processReportsToSensorData(final String aks, final List<MyStromReport> reports,  final ToDoubleFunction<MyStromReport> valueExtractor) {
+	private SensorData processReportsToSensorData(final String aks, final List<MyStromReport> reports,
+			final ToDoubleFunction<MyStromReport> valueExtractor) {
 		if (StringUtils.isEmpty(aks)) {
 			return null;
 		}
-		
+
+		final Map<Date, Double> data = aggragateValuesTo15m(reports, valueExtractor);
+		if (data.isEmpty()) {
+			return null;
+		}
+
 		final SensorData sensorData = new SensorData(aks);
-		sensorData.setData(aggragateValuesTo15m(reports, valueExtractor));
+		sensorData.setData(data);
 		return sensorData;
 	}
-	
-	private Map<Date, Double> aggragateValuesTo15m(final List<MyStromReport> reports, final ToDoubleFunction<MyStromReport> valueExtractor) {
+
+	private Map<Date, Double> aggragateValuesTo15m(final List<MyStromReport> reports,
+			final ToDoubleFunction<MyStromReport> valueExtractor) {
 		return reports.stream() //
-			.collect(Collectors.groupingBy( //
-					report -> toLastQuaterHour(report.getDate()), //
-					Collectors.averagingDouble(valueExtractor)
-				));	
+				.collect(Collectors.groupingBy( //
+						report -> toLastQuaterHour(report.getDate()), //
+						Collectors.averagingDouble(valueExtractor)));
 	}
-	
+
 	private Date toLastQuaterHour(final Date d) {
-        final Calendar gval = Calendar.getInstance();
-        gval.set(Calendar.MINUTE, 15 * (gval.get(Calendar.MINUTE) / 15));
-        gval.set(Calendar.SECOND, 0);
-        gval.set(Calendar.MILLISECOND, 0);
+		final Calendar gval = Calendar.getInstance();
+		gval.set(Calendar.MINUTE, 15 * (gval.get(Calendar.MINUTE) / 15));
+		gval.set(Calendar.SECOND, 0);
+		gval.set(Calendar.MILLISECOND, 0);
 
 		return gval.getTime();
 	}
-	
+
 	private void truncateDataPointsUpTo(final Date upperTimeRange) {
 		dataPoints.forEach((sensorConfig, reports) -> {
 			reports.removeIf(report -> report.isBefore(upperTimeRange));
 		});
 	}
-	
+
 }

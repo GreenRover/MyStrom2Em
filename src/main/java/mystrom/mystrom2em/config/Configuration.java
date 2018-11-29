@@ -3,47 +3,40 @@ package mystrom.mystrom2em.config;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.configuration2.HierarchicalConfiguration;
-import org.apache.commons.configuration2.XMLConfiguration;
-import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
-import org.apache.commons.configuration2.builder.fluent.Parameters;
-import org.apache.commons.configuration2.ex.ConfigurationException;
-import org.apache.commons.configuration2.tree.ImmutableNode;
+import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration.HierarchicalConfiguration;
+import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.lang.StringUtils;
 
 public class Configuration {
 
 	private final XMLConfiguration config;
 
 	public Configuration(final String xmlFile) throws ConfigurationException {
-		final Parameters params = new Parameters();
-		final FileBasedConfigurationBuilder<XMLConfiguration> builder = new FileBasedConfigurationBuilder<>(
-				XMLConfiguration.class).configure( //
-						params.xml() //
-								.setFileName(xmlFile) //
-								.setValidating(true) //
-								.setSchemaValidation(true) //
-		);
-
-		config = builder.getConfiguration();
+		config = new XMLConfiguration(xmlFile);
 	}
 
 	public String getEmBaseUrl() {
-		return config.getString("ems.baseUrl");
+		final String string = config.getString("em.baseUrl");
+		assert StringUtils.isNotEmpty(string) : "Configuration must contain em baseUrl";
+		return string;
 	}
 
 	public String getEmApiKey() {
-		return config.getString("ems.apiKey");
+		final String string = config.getString("em.apiKey");
+		assert StringUtils.isNotEmpty(string) : "Configuration must contain em apiKey";
+		return string;
 	}
 
 	public List<ConfigMyStromSwitch> getSensorConfigs() {
 		final List<ConfigMyStromSwitch> configs = new ArrayList<>();
-		final List<HierarchicalConfiguration<ImmutableNode>> switches = config.configurationsAt("mystrom.switch");
-		for (final HierarchicalConfiguration<ImmutableNode> sub : switches) {
+		final List<HierarchicalConfiguration> switches = config.configurationsAt("mystrom.switch");
+		for (final HierarchicalConfiguration sub : switches) {
 			configs.add(new ConfigMyStromSwitch( //
-					sub.getString("name"), //
+					sub.getString("ip"), //
 					sub.getInteger("pullIntervall", 30), //
-					sub.getString("aksTemp"), //
-					sub.getString("aksEnergy")));
+					sub.getString("aksEnergy"), //
+					sub.getString("aksTemp")));
 		}
 
 		return configs;

@@ -24,7 +24,7 @@ public class MstEMSensorData {
 
 	public void sendData(final Collection<SensorData> data, final JUNCTION junction) throws IOException {
 		final String payload = toJson(data, junction);
-		final URL url = new URL(baseUrl + "/energy-manager-sensor-measured/push-raw-data/api_key/" + apiKey);
+		final URL url = new URL(baseUrl.replaceAll("\\/$","") + "/energy-manager-sensor-measured/push-raw-data/api_key/" + apiKey);
 		callHttp(url, payload);
 	}
 

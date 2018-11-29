@@ -28,7 +28,7 @@
 
 	<appender name="valueFile"
 		class="org.apache.log4j.RollingFileAppender">
-		<param name="file" value="mystrom.log" />
+		<param name="file" value="data.csv" />
 		<param name="maxFileSize" value="50MB" />
 		<param name="maxBackupIndex" value="10" />
 		<layout class="org.apache.log4j.PatternLayout">
@@ -36,13 +36,13 @@
 		</layout>
 	</appender>
 
-	<logger name="DATA_POINTS">
+	<logger name="DATA_POINTS" additivity="false">
 		<level value="INFO" />
 		<appender-ref ref="valueFile" />
 	</logger>
-
+	
 	<root>
-		<level value="info" />
+		<level value="all" />
 		<appender-ref ref="console" />
 		<appender-ref ref="logFile" />
 	</root>
