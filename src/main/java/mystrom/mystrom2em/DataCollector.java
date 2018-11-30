@@ -38,7 +38,7 @@ import mystrom.mystrom2em.mystrom.MyStromReport;
 
 public class DataCollector implements Runnable {
 	private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
-	private final ThreadPoolExecutor excecuter = new ThreadPoolExecutor(40, 40, 0L, TimeUnit.MILLISECONDS,
+	private final ThreadPoolExecutor excecuter = new ThreadPoolExecutor(10, 10, 0L, TimeUnit.MILLISECONDS,
 			new LinkedBlockingQueue<Runnable>());
 	private final MyStrom ms;
 	private final MstEMSensorData em;
@@ -94,20 +94,22 @@ public class DataCollector implements Runnable {
 		}
 	}
 
+	/**
+	 *  Run all 15min at xx:00, xx:15, xx:30, xx:45 (at excact 15min border)
+	 */
 	private void initEmPushScheduler() {
 		final LocalDateTime now = LocalDateTime.now();
 		final LocalDateTime nextQuarter = now.truncatedTo(ChronoUnit.HOURS)
 				.plusMinutes(15 * ((now.getMinute() / 15) + 1));
-		final long delay = 20; // (nextQuarter.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli() -
-								// System.currentTimeMillis()) / 1000;
+		final long delay = (nextQuarter.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+				- System.currentTimeMillis()) / 1000;
 		scheduler.scheduleAtFixedRate(() -> {
 			excecuter.execute(() -> emPushAndTruncateDataPoints());
-		}, delay, 15, TimeUnit.SECONDS);
+		}, delay, 15 * 60, TimeUnit.SECONDS);
 	}
 
 	private void emPushAndTruncateDataPoints() {
-		System.out.println("emPushAndTruncateDataPoints");
-		final Date upperTimeRange = new Date(); //toLastQuaterHour(new Date());
+		final Date upperTimeRange = toLastQuaterHour(new Date());
 
 		try {
 			final Collection<SensorData> sensorData = getSensorData(upperTimeRange);
@@ -173,6 +175,10 @@ public class DataCollector implements Runnable {
 		return gval.getTime();
 	}
 
+	/**
+	 * Delete all data points from cache, cached before upperTimeRange
+	 * @param upperTimeRange
+	 */
 	private void truncateDataPointsUpTo(final Date upperTimeRange) {
 		dataPoints.forEach((sensorConfig, reports) -> {
 			reports.removeIf(report -> report.isBefore(upperTimeRange));

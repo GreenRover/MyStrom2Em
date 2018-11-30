@@ -25,6 +25,8 @@ public class Configuration {
 	public String getEmApiKey() {
 		final String string = config.getString("em.apiKey");
 		assert StringUtils.isNotEmpty(string) : "Configuration must contain em apiKey";
+		assert string.length() == 32 : "The configured apiKey has to be 32 chars length";
+		
 		return string;
 	}
 

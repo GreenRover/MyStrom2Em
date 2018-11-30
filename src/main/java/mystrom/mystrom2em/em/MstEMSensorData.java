@@ -25,7 +25,12 @@ public class MstEMSensorData {
 	public void sendData(final Collection<SensorData> data, final JUNCTION junction) throws IOException {
 		final String payload = toJson(data, junction);
 		final URL url = new URL(baseUrl.replaceAll("\\/$","") + "/energy-manager-sensor-measured/push-raw-data/api_key/" + apiKey);
-		callHttp(url, payload);
+		final String rawResponse = callHttp(url, payload);
+		final MstEmSensorDataResponse response = parseRepsonse(rawResponse);
+		
+		if (!"OK".equals(response.getStatus())) {
+			throw new RuntimeException(String.format("%s: %s", response.getStatus(), response.getMessage()));
+		}
 	}
 
 	private String toJson(final Collection<SensorData> data, final JUNCTION junction) {
@@ -61,6 +66,10 @@ public class MstEMSensorData {
 		}
 		rd.close();
 		return result.toString();
+	}
+	
+	private MstEmSensorDataResponse parseRepsonse(final String rawResponse) {
+		return new Gson().fromJson(rawResponse, MstEmSensorDataResponse.class);
 	}
 
 }
