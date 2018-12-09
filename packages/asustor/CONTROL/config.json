@@ -1,0 +1,20 @@
+{
+   "general":{
+      "package":"mystrom",
+      "name":"MyStrom",
+      "version":"1.0.0",
+      "depends":[],
+      "conflicts":[],
+      "developer":"GreenRover",
+      "maintainer":"GreenRover",
+      "email":"greenrover33@gmail.com",
+      "architecture":"any",
+      "firmware":"2.1.0"
+   },
+   "adm-desktop":{
+      "privilege":{
+         "accessible":"users",
+         "customizable":true
+      }
+   }
+}
