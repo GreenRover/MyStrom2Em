@@ -18,7 +18,7 @@ public class ConfigMyStromSwitch {
 		this.aksEnergy = aksEnergy;
 	}
 
-	public String geIp() {
+	public String getIp() {
 		return ip;
 	}
 

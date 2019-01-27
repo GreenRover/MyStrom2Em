@@ -7,9 +7,15 @@ public class MyStromReport {
 	private Double power;
 	private Double temperature;
 	private Boolean relay;
+	private String sourceIp;
 
 	public MyStromReport() {
 		date = new Date();
+	}
+	
+	public MyStromReport(final Date date, final String sourceIp) {
+		this.date = date;
+		this.sourceIp = sourceIp;
 	}
 
 	public Double getPower() {
@@ -42,6 +48,14 @@ public class MyStromReport {
 
 	public void setDate(final Date date) {
 		this.date = date;
+	}
+	
+	public String getSourceIp() {
+		return sourceIp;
+	}
+
+	public void setSourceIp(String sourceIp) {
+		this.sourceIp = sourceIp;
 	}
 
 	public boolean isBefore(final Date upperTimeRange) {

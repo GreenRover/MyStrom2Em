@@ -48,9 +48,9 @@ public class DataCollector implements Runnable {
 
 	private final static Logger LOG = LoggerFactory.getLogger(DataCollector.class);
 	private final static Logger DATA_POINTS_LOG = LoggerFactory.getLogger("DATA_POINTS");
-	private final static SimpleDateFormat DATE_FORMAT_SQL = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
+	public final static SimpleDateFormat DATE_FORMAT_SQL = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
-	public DataCollector(final Configuration config) {
+	public DataCollector(final Configuration config) { // 2018-12-09 14:09:43
 		this.config = config;
 		em = new MstEMSensorData(config.getEmBaseUrl(), config.getEmApiKey());
 		ms = new MyStrom();
@@ -73,11 +73,12 @@ public class DataCollector implements Runnable {
 
 	private void collectData(final ConfigMyStromSwitch sensorConfig) {
 		try {
-			final MyStromReport report = ms.readReport(InetAddress.getByName(sensorConfig.geIp()));
+			final MyStromReport report = ms.readReport(InetAddress.getByName(sensorConfig.getIp()));
+			report.setSourceIp(sensorConfig.getIp());
 			dataPoints.get(sensorConfig).add(report);
-			logCsv(sensorConfig.geIp(), report);
+			logCsv(sensorConfig.getIp(), report);
 		} catch (final IOException e) {
-			LOG.error("Unable to load data from {}, cause of: {}", sensorConfig.geIp(), e.getMessage());
+			LOG.error("Unable to load data from {}, cause of: {}", sensorConfig.getIp(), e.getMessage());
 		}
 	}
 
@@ -142,7 +143,7 @@ public class DataCollector implements Runnable {
 				.collect(Collectors.toList());
 	}
 
-	private SensorData processReportsToSensorData(final String aks, final List<MyStromReport> reports,
+	public static SensorData processReportsToSensorData(final String aks, final List<MyStromReport> reports,
 			final ToDoubleFunction<MyStromReport> valueExtractor) {
 		if (StringUtils.isEmpty(aks)) {
 			return null;
@@ -158,7 +159,7 @@ public class DataCollector implements Runnable {
 		return sensorData;
 	}
 
-	private Map<Date, Double> aggragateValuesTo15m(final List<MyStromReport> reports,
+	private static Map<Date, Double> aggragateValuesTo15m(final List<MyStromReport> reports,
 			final ToDoubleFunction<MyStromReport> valueExtractor) {
 		return reports.stream() //
 				.collect(Collectors.groupingBy( //
@@ -166,8 +167,9 @@ public class DataCollector implements Runnable {
 						Collectors.averagingDouble(valueExtractor)));
 	}
 
-	private Date toLastQuaterHour(final Date d) {
+	public static Date toLastQuaterHour(final Date d) {
 		final Calendar gval = Calendar.getInstance();
+		gval.setTime(d);
 		gval.set(Calendar.MINUTE, 15 * (gval.get(Calendar.MINUTE) / 15));
 		gval.set(Calendar.SECOND, 0);
 		gval.set(Calendar.MILLISECOND, 0);
