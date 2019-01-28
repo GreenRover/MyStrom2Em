@@ -20,6 +20,7 @@ import mystrom.mystrom2em.config.ConfigMyStromSwitch;
 import mystrom.mystrom2em.config.Configuration;
 import mystrom.mystrom2em.em.MstEMSensorData;
 import mystrom.mystrom2em.em.MstEmSensorDataRequest;
+import mystrom.mystrom2em.em.MstEmSensorDataResponse;
 import mystrom.mystrom2em.em.SensorData;
 import mystrom.mystrom2em.mystrom.MyStromReport;
 
@@ -31,6 +32,7 @@ public class DataFileReader implements Runnable {
 	private final Map<String, ConfigMyStromSwitch> myStromSwitchConfigs;
 	private final BufferedReader fh;
 	private final MstEMSensorData em;
+	private List<MyStromReport> data;
 
 	public DataFileReader(final Configuration config, final String dataFile) throws FileNotFoundException {
 		myStromSwitchConfigs = config.getSensorConfigs().stream() //
@@ -79,7 +81,7 @@ public class DataFileReader implements Runnable {
 	@Override
 	public void run() {
 		try {
-			final List<MyStromReport> data = new ArrayList<>();
+			data = new ArrayList<>();
 
 			while (true) {
 				final Collection<MyStromReport> chunk = readLines(CHUNCK_SIZE);
@@ -96,9 +98,9 @@ public class DataFileReader implements Runnable {
 					if (sensorData.isEmpty()) {
 						return;
 					}
-					em.sendData(sensorData, MstEmSensorDataRequest.JUNCTION.MERGE);
+					MstEmSensorDataResponse response = em.sendData(sensorData, MstEmSensorDataRequest.JUNCTION.MERGE);
 					truncateDataPointsUpTo(data, upperTimeRange);
-					LOG.info("Send {} sensors to EM", sensorData.size());
+					LOG.info("Send {} sensors with {} values to EM", sensorData.size(), response.importedValues());
 				} catch (final IOException e) {
 					LOG.error("Unable to send data to EM, cause of: {}", e.getMessage());
 				}
@@ -115,6 +117,7 @@ public class DataFileReader implements Runnable {
 
 	private List<SensorData> getSensorData(final Collection<MyStromReport> data, final Date upperTimeRange) {
 		final Map<String, List<MyStromReport>> groupedAndFilteredData = data.stream() //
+				.filter(report -> report.getPower() != null && report.getTemperature() != null) //
 				.filter(report -> report.isBefore(upperTimeRange)) //
 				.collect(Collectors.groupingBy(MyStromReport::getSourceIp));
 
@@ -126,9 +129,9 @@ public class DataFileReader implements Runnable {
 			final ConfigMyStromSwitch myStromSwitchConfig = myStromSwitchConfigs.get(myStromSwitchIp);
 
 			final SensorData energy = DataCollector.processReportsToSensorData(myStromSwitchConfig.getAksEnergy(),
-					filteredReports, r -> r.getPower() / 4); // W / 4 == 15min
-																// Wh
+					filteredReports, r -> r.getPower() / 4); // W / 4 == 15min Wh
 			result.add(energy);
+			
 			final SensorData temp = DataCollector.processReportsToSensorData(myStromSwitchConfig.getAksTemp(),
 					filteredReports, MyStromReport::getTemperature);
 			result.add(temp);

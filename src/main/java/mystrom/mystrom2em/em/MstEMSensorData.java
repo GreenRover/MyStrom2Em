@@ -9,11 +9,16 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.gson.Gson;
 
 import mystrom.mystrom2em.em.MstEmSensorDataRequest.JUNCTION;
 
 public class MstEMSensorData {
+	private final static Logger LOG = LoggerFactory.getLogger(MstEMSensorData.class);
+	
 	private final String baseUrl;
 	private final String apiKey;
 
@@ -22,15 +27,18 @@ public class MstEMSensorData {
 		this.apiKey = apiKey;
 	}
 
-	public void sendData(final Collection<SensorData> data, final JUNCTION junction) throws IOException {
+	public MstEmSensorDataResponse sendData(final Collection<SensorData> data, final JUNCTION junction) throws IOException {
 		final String payload = toJson(data, junction);
 		final URL url = new URL(baseUrl.replaceAll("\\/$","") + "/energy-manager-sensor-measured/push-raw-data/api_key/" + apiKey);
 		final String rawResponse = callHttp(url, payload);
 		final MstEmSensorDataResponse response = parseRepsonse(rawResponse);
 		
-		if (!"OK".equals(response.getStatus())) {
+		if (!response.allOk()) {
+			LOG.warn(response.toString());
 			throw new RuntimeException(String.format("%s: %s", response.getStatus(), response.getMessage()));
 		}
+		
+		return response;
 	}
 
 	private String toJson(final Collection<SensorData> data, final JUNCTION junction) {

@@ -31,6 +31,27 @@ public class MstEmSensorDataResponse {
 	public void setSensors(Map<String, MstEmSensorDataResponseSensor> sensors) {
 		this.sensors = sensors;
 	}
+
+	public int importedValues() {
+		return sensors.values().stream() //
+				.mapToInt(MstEmSensorDataResponseSensor::getImported_values) //
+				.sum();
+	}
+
+	public boolean allOk() {
+		if (!"OK".equals(status)) {
+			return false;
+		}
+
+		return sensors.values().stream() //
+				.map(MstEmSensorDataResponseSensor::getStatus) //
+				.allMatch(status -> "OK".equals(status));
+	}
+
+	@Override
+	public String toString() {
+		return String.format("status=%s, msg=%s, sensors=[%s]", status, message, sensors.values().toString());
+	}
 }
 
 class MstEmSensorDataResponseSensor {
@@ -78,6 +99,12 @@ class MstEmSensorDataResponseSensor {
 
 	public void setLast_value_after(String last_value_after) {
 		this.last_value_after = last_value_after;
+	}
+
+	@Override
+	public String toString() {
+		return String.format("status=%s, msg=%s, importedVals=%d, lastBefore=%s, lastAfter=%s", status, message,
+				imported_values, last_value_before, last_value_after);
 	}
 
 }
