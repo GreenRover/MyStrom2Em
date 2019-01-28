@@ -14,6 +14,13 @@ If you want to change log configuration specify a custom log4j.xml
 
 ``java -ea -Dlog4j.configuration="file:log4j.xml" -jar target/mystrom2em-jar-with-dependencies.jar config.xml``
 
+### Restore all data from local log
+
+If MST EM has an error data, you can send all data from local data.csv to EM
+
+``java -ea -jar target/mystrom2em-jar-with-dependencies.jar config.xml data.csv``
+
+This command will end if all data from given file was transmitted.
 
 ## Debug HTTP Connection
 
